@@ -1,5 +1,5 @@
 SELECT *
-FROM [dbo].[Superstore Sales Dataset]
+FROM[SuperstoreSales].[dbo].[Superstore Sales Dataset]
 
 --  Detect and eliminate duplicate records within the Amazon sales dataset to ensure data integrity.
 WITH Duplicate_Records AS (
@@ -7,9 +7,9 @@ WITH Duplicate_Records AS (
         *,
         ROW_NUMBER() OVER (PARTITION BY Order_ID, Order_Date, Ship_Date, Ship_Mode, Customer_ID, Customer_Name, Segment, Country, City, State, Postal_Code, Region, Product_ID, Category, Sub_Category, Product_Name, Sales, shipping_duration_in_days
                            ORDER BY (SELECT NULL)) AS RowNum
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 )
-DELETE FROM [dbo].[Superstore Sales Dataset]
+DELETE FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 WHERE Row_ID IN (
     SELECT Row_ID FROM Duplicate_Records WHERE RowNum > 1
 );
@@ -22,10 +22,10 @@ SELECT
     COUNT(*) AS Total_Records,
     COUNT(CASE WHEN Sales IS NULL THEN 1 END) AS Missing_Sales,
     COUNT(CASE WHEN Order_Date IS NULL THEN 1 END) AS Missing_Order_Dates
-FROM [dbo].[Superstore Sales Dataset]
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 
 --Adding missing postal codes to Burlington city records
-UPDATE [dbo].[Superstore Sales Dataset]
+UPDATE [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 SET Postal_Code ='05401'
 Where City = 'Burlington' AND State ='Vermont'
 And Postal_Code IS NULL;
@@ -36,17 +36,17 @@ And Postal_Code IS NULL;
 -- The results are ordered in descending order of sales, showing the highest sales first.
 
 SELECT Product_ID, Product_Name, Sales
-FROM [dbo].[Superstore Sales Dataset]
-WHERE Sales > (SELECT AVG(Sales) + 3*STDEV(Sales) FROM [dbo].[Superstore Sales Dataset])
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
+WHERE Sales > (SELECT AVG(Sales) + 3*STDEV(Sales) FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset])
 ORDER BY Sales DESC;
 
 -- Adds a 'shipping_duration_in_days' column to store the calculated transit time
 -- Computed as the difference in days between the order date and ship date for each record date.
 
-ALTER TABLE [dbo].[Superstore Sales Dataset]
+ALTER TABLE [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 ADD shipping_duration_in_days INT;
 
-UPDATE [dbo].[Superstore Sales Dataset]
+UPDATE [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 SET shipping_duration_in_days = DATEDIFF(DAY, Order_Date, Ship_Date);
 
 --calculating the total number of orders, unique customers, unique products, and total sales
@@ -54,7 +54,7 @@ SELECT COUNT(*) AS Total_Orders,
        COUNT(DISTINCT Customer_ID) AS Unique_Customers, 
        COUNT(DISTINCT Product_ID) AS Unique_Products, 
        SUM(Sales) AS Total_Sales
-FROM [dbo].[Superstore Sales Dataset];
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset];
 
 
 -- This query analyzes sales performance and market penetration for each region.
@@ -72,7 +72,7 @@ WITH Region_Metrics AS (
         AVG(DATEDIFF(DAY, Order_Date, Ship_Date)) AS Avg_Shipping_Days,
         COUNT(DISTINCT State) AS State_Coverage,
         COUNT(DISTINCT City) AS City_Coverage
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY Region
 )
 SELECT
@@ -102,7 +102,7 @@ WITH State_Metrics AS (
         COUNT(DISTINCT Customer_ID) AS Customer_Count,
         AVG(Sales) AS Average_Order_Value,
         AVG(DATEDIFF(DAY, Order_Date, Ship_Date)) AS Avg_Shipping_Days
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY State
 ),
 State_Rankings AS (
@@ -135,7 +135,7 @@ WITH City_Metrics AS (
         COUNT(DISTINCT Customer_ID) AS Customer_Count,
         AVG(Sales) AS Average_Order_Value,
         AVG(DATEDIFF(DAY, Order_Date, Ship_Date)) AS Avg_Shipping_Days
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY City, State
 ),
 City_Rankings AS (
@@ -163,7 +163,7 @@ ORDER BY Sales_Rank;
 WITH Customer_Totals AS (
     SELECT Customer_Name, SUM(Sales) AS Total_Sales,
            ROW_NUMBER() OVER (ORDER BY SUM(Sales) DESC) AS RowNum
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY Customer_Name
 )
 SELECT *
@@ -190,7 +190,7 @@ WITH Segment_Analysis AS (
         
         -- Product engagement metrics
         COUNT(DISTINCT Product_ID) AS Unique_Products_Purchased
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY Segment
 ),
 Overall_Metrics AS (
@@ -226,7 +226,7 @@ WITH Category_Sales AS (
         SUM(Sales) AS Total_Sales,
         COUNT(DISTINCT Order_ID) AS Order_Count,
         SUM(Sales) / COUNT(DISTINCT Order_ID) AS Avg_Order_Value
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY Category, Sub_Category
 ),
 TotalSales AS (
@@ -251,26 +251,26 @@ ORDER BY
 -- This query identifies the top 10 best-selling products.
 SELECT Top 10 Product_Name,
               SUM(Sales) AS Total_Sales
-FROM [dbo].[Superstore Sales Dataset]
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 GROUP BY Product_Name
 ORDER BY Total_Sales DESC;
 
 
 -- Computing the duration of shipments for different shipping modes
 SELECT Ship_Mode, AVG(shipping_duration_in_days) AS Average_Shipping_Time
-FROM  [dbo].[Superstore Sales Dataset]
+FROM  [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 GROUP BY Ship_Mode
 ORDER BY  Average_Shipping_Time;
 
 --Determining sales by ship method
 SELECT Ship_Mode, SUM(Sales) AS Total_Sales
-FROM [dbo].[Superstore Sales Dataset]
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 GROUP BY Ship_Mode
 ORDER BY Total_Sales DESC;
 
 -- This query calculates the total sales for each year.
 SELECT YEAR(Order_Date) AS Year,  SUM(Sales) AS Total_Sales
-FROM [dbo].[Superstore Sales Dataset]
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 GROUP BY YEAR(Order_Date)
 ORDER BY Year;
 
@@ -283,8 +283,9 @@ SELECT
     YEAR(Order_Date) AS Sales_Year,
     MONTH(Order_Date) AS Sales_Month,
     SUM(Sales) AS Total_Sales
-FROM [dbo].[Superstore Sales Dataset]
-GROUP BY YEAR(Order_Date), MONTH(Order_Date);
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
+GROUP BY YEAR(Order_Date), MONTH(Order_Date)
+Order BY Total_Sales DESC;
 
 SELECT 
     CONCAT(Sales_Year, '-', FORMAT(Sales_Month, '00')) AS Month,
@@ -302,7 +303,7 @@ WITH Sales AS (
     SELECT
         Order_Date,
         SUM(Sales) AS Total_Sales
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     WHERE Order_Date IS NOT NULL
     GROUP BY
         Order_Date
@@ -338,7 +339,7 @@ BEGIN
     SELECT 
         Category,
         SUM(Sales) AS Total_Sales
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     WHERE Order_Date BETWEEN @StartDate AND @EndDate
     GROUP BY Category
     ORDER BY Total_Sales DESC;
@@ -356,7 +357,7 @@ WITH Customer_Metrics AS (
         DATEDIFF(day, MAX(Order_Date), GETDATE()) AS Recency,
         COUNT(DISTINCT Order_ID) AS Frequency,
         SUM(Sales) AS Monetary
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY Customer_Name
 ),
 RFM_Scores AS (
@@ -414,7 +415,7 @@ WITH Yearly_Sales AS (
     SELECT 
         YEAR(Order_Date) AS Year,
         SUM(Sales) AS Total_Sales
-    FROM [Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY YEAR(Order_Date)
 )
 SELECT 
@@ -437,7 +438,7 @@ WITH Product_Sales_By_Year AS (
         YEAR(Order_Date) AS Year,
         SUM(Sales) AS Annual_Sales,
         COUNT(DISTINCT Order_ID) AS Annual_Orders
-    FROM [dbo].[Superstore Sales Dataset]
+    FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
     GROUP BY Product_ID, YEAR(Order_Date)
 ),
 ProductGrowth AS (
@@ -450,7 +451,7 @@ ProductGrowth AS (
     FROM Product_Sales_By_Year p1
     LEFT JOIN Product_Sales_By_Year p2 ON p1.Product_ID = p2.Product_ID AND p1.Year = p2.Year + 1
 )
-SELECT
+SELECT DISTINCT
     p.Product_ID,
     p.Product_Name,
     pg.Year,
@@ -463,7 +464,7 @@ SELECT
         ELSE 'Introduction'
     END AS Lifecycle_Stage
 FROM ProductGrowth pg
-JOIN [dbo].[Superstore Sales Dataset] p ON pg.Product_ID = p.Product_ID
+JOIN [SuperstoreSales].[dbo].[Superstore Sales Dataset] p ON pg.Product_ID = p.Product_ID
 WHERE pg.Sales_Growth_Rate IS NOT NULL
 ORDER BY p.Product_ID, pg.Year;
 
@@ -478,7 +479,7 @@ SELECT
     COUNT(DISTINCT Customer_ID) AS Unique_Customers,
     SUM(Sales) AS Total_Sales,
     AVG(shipping_duration_in_days) AS Avg_Shipping_Days
-FROM [dbo].[Superstore Sales Dataset]
+FROM [SuperstoreSales].[dbo].[Superstore Sales Dataset]
 GROUP BY FORMAT(Order_Date, 'yyyy-MM');
 
 
